@@ -421,7 +421,7 @@ func (o *Ksniff) setupSignalHandler() chan interface{} {
 	signals := make(chan os.Signal, 1)
 	exit := make(chan interface{})
 
-	signal.Notify(signals, syscall.SIGINT)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		for {
 			select {
@@ -431,8 +431,9 @@ func (o *Ksniff) setupSignalHandler() chan interface{} {
 					err := o.snifferService.Cleanup()
 					if err != nil {
 						log.WithError(err).Error("failed to teardown sniffer, a manual teardown is required.")
+					} else {
+						log.Info("sniffer cleanup completed successfully")
 					}
-					log.Info("sniffer cleanup completed successfully")
 
 					// Kill wireshark if used
 					if o.wireshark != nil {
@@ -525,6 +526,15 @@ func (o *Ksniff) Run() error {
 			}
 		}()
 
+		defer func() {
+			log.Info("starting sniffer cleanup")
+			err := o.snifferService.Cleanup()
+			if err != nil {
+				log.WithError(err).Error("failed to teardown sniffer, a manual teardown is required.")
+			} else {
+				log.Info("sniffer cleanup completed successfully")
+			}
+		}()
 		err = o.wireshark.Run()
 		return err
 	}
