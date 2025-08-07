@@ -2,6 +2,9 @@ package runtime
 
 import (
 	"fmt"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"ksniff/utils"
 )
@@ -56,6 +59,11 @@ func (d *ContainerdBridge) BuildNodeWideTcpdumpCommand(netInterface string, filt
 }
 
 func (d *ContainerdBridge) buildTcpdumpCommand(netInterface string, filter string) string {
+	if strings.Contains(filter, "'") {
+		log.Warn("Filter contains single quotes. Will skip wrapping the filter in single quotes")
+	} else {
+		filter = fmt.Sprintf("'%s'", filter)
+	}
 	return fmt.Sprintf("tcpdump -i %s -U -w - %s", netInterface, filter)
 }
 
